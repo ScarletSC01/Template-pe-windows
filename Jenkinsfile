@@ -17,7 +17,7 @@ pipeline {
         string(name: 'PROYECT_ID', defaultValue: '', description: 'ID del proyecto en Google Cloud Platform')
         string(name: 'REGION', defaultValue: 'us-central1', description: 'Región de GCP donde se desplegará la VM')
         string(name: 'ZONE', defaultValue: 'us-central1-a', description: 'Zona de disponibilidad específica')
-        choice(name: 'ENVIRONMENT', choices: ['1-Desarrollo', '2-Pre productivo (PP)', '3-Producción'], description: 'Ambiente de despliegue de la infraestructura')
+        choice(name: 'ENVIRONMENT', choices: ['desarrollo-1', 'pre-productivo-2', 'produccion-3'], description: 'Ambiente de despliegue de la infraestructura')
 
         string(name: 'VM_NAME', defaultValue: 'vm-pe-windows', description: 'Nombre único para la máquina virtual')
         choice(name: 'PROCESSOR_TECH', choices: ['n2', 'e2'], description: 'Tecnología de procesador')
