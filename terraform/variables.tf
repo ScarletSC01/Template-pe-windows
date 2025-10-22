@@ -1,161 +1,130 @@
 variable "PROJECT_ID" {
   description = "ID del proyecto en Google Cloud Platform"
   type        = string
-  default     = "jenkins-terraform-demo-472920"
 }
 
 variable "REGION" {
-  description = "Región de GCP donde se desplegará la VM"
+  description = "Región de GCP"
   type        = string
-  default     = "us-central1"
 }
 
 variable "ZONE" {
-  description = "Zona de disponibilidad específica"
+  description = "Zona de GCP"
   type        = string
-  default     = "us-central1-a"
 }
 
 variable "ENVIRONMENT" {
-  description = "Ambiente de despliegue de la infraestructura"
+  description = "Ambiente de despliegue (1-Desarrollo, 2-Test, 3-Prod)"
   type        = string
-  default     = "Desarrollo"
 }
 
 variable "VM_NAME" {
-  description = "Nombre único para la máquina virtual"
+  description = "Nombre de la VM"
   type        = string
-  default     = "vm-pe-windows"
 }
 
 variable "PROCESSOR_TECH" {
-  description = "Tecnología de procesador (n2, e2, ...)"
+  description = "Tecnología de procesador"
   type        = string
-  default     = "n2"
 }
 
 variable "VM_TYPE" {
-  description = "Familia de tipo de máquina virtual"
+  description = "Familia de máquina virtual"
   type        = string
-  default     = "n2-standard-2"
 }
 
 variable "VM_CORES" {
   description = "Número de vCPUs"
   type        = number
-  default     = 2
 }
 
 variable "VM_MEMORY" {
   description = "Memoria RAM en GB"
   type        = number
-  default     = 8
 }
 
 variable "OS_TYPE" {
-  description = "Imagen/Family de Windows en windows-cloud"
+  description = "Versión del sistema operativo Windows Server Datacenter"
   type        = string
-  default     = "windows-server-2025-dc"
 }
 
 variable "DISK_SIZE" {
   description = "Tamaño del disco persistente en GB"
   type        = number
-  default     = 100
 }
 
 variable "DISK_TYPE" {
   description = "Tipo de disco (pd-ssd, pd-balanced, pd-standard)"
   type        = string
-  default     = "pd-ssd"
 }
 
 variable "INFRAESTRUCTURE_TYPE" {
-  description = "On-demand o Preemptible"
+  description = "Tipo de infraestructura (On-demand o Preemptible)"
   type        = string
-  default     = "On-demand"
 }
 
 variable "VPC_NETWORK" {
   description = "Nombre de la red VPC"
   type        = string
-  default     = "default"
 }
 
 variable "SUBNET" {
-  description = "Nombre de la subred dentro de la VPC"
+  description = "Nombre de la subred"
   type        = string
-  default     = "vm-subnet"
 }
 
 variable "NETWORK_SEGMENT" {
   description = "Segmento de red CIDR"
   type        = string
-  default     = "10.0.1.0/24"
 }
 
 variable "INTERFACE" {
-  description = "Nombre de la interfaz de red principal"
+  description = "Interfaz de red principal"
   type        = string
-  default     = "nic0"
 }
 
+# Cambiados a string porque Jenkins usa choice
 variable "PRIVATE_IP" {
-  description = "Asignar dirección IP privada estática"
-  type        = bool
-  default     = true
+  description = "Asignar IP privada estática (true/false)"
+  type        = string
 }
 
 variable "PUBLIC_IP" {
-  description = "Asignar dirección IP pública"
-  type        = bool
-  default     = false
+  description = "Asignar IP pública (true/false)"
+  type        = string
 }
 
 variable "FIREWALL_RULES" {
   description = "Reglas de firewall separadas por comas"
   type        = string
-  default     = "allow-rdp,allow-winrm"
 }
 
 variable "SERVICE_ACCOUNT" {
-  description = "Cuenta de servicio para la VM"
+  description = "Cuenta de servicio"
   type        = string
-  default     = "gcp-key-platform"
 }
 
 variable "LABEL" {
-  description = "Etiquetas personalizadas key=value"
+  description = "Etiquetas personalizadas (key=value)"
   type        = string
-  default     = "app=web"
 }
 
 variable "ENABLE_STARTUP_SCRIPT" {
-  description = "Habilitar script de inicio personalizado"
-  type        = bool
-  default     = false
-}
-
-variable "STARTUP_SCRIPT" {
-  description = "Contenido del script de inicio (PowerShell)"
+  description = "Habilitar script de inicio"
   type        = string
-  default     = ""
 }
 
 variable "ENABLE_DELETION_PROTECTION" {
-  description = "Proteger la VM contra eliminación accidental"
-  type        = bool
-  default     = false
+  description = "Proteger contra eliminación"
+  type        = string
 }
 
 variable "CHECK_DELETE" {
-  description = "Solicitar confirmación antes de eliminar recursos"
-  type        = bool
-  default     = false
+  description = "Confirmar antes de eliminar recursos"
+  type        = string
 }
 
 variable "AUTO_DELETE_DISK" {
-  description = "Eliminar automáticamente el disco al eliminar la VM"
-  type        = bool
-  default     = true
+  description = "Eliminar disco con la VM"
+  type        = string
 }
