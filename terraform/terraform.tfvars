@@ -45,7 +45,7 @@ PUBLIC_IP                 = "true"
 # CONFIGURACIÓN DE SEGURIDAD
 # ================================================================
 FIREWALL_RULES            = "allow-rdp,allow-winrm"
-SERVICE_ACCOUNT           = ""
+SERVICE_ACCOUNT           = "sa-plataforma@jenkins-terraform-demo-472920.iam.gserviceaccount.com"
 
 # ================================================================
 # ETIQUETAS Y METADATOS
