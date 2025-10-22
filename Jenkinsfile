@@ -29,7 +29,7 @@ pipeline {
         choice(name: 'DISK_TYPE', choices: ['pd-ssd', 'pd-balanced', 'pd-standard'], description: 'Tipo de disco')
         choice(name: 'INFRAESTRUCTURE_TYPE', choices: ['On-demand', 'Preemptible'], description: 'Tipo de infraestructura')
 
-        string(name: 'VPC_NETWORK', defaultValue: 'default', description: 'Nombre de la red VPC')
+        string(name: 'VPC_NETWORK', defaultValue: 'vpc-pe-01', description: 'Nombre de la red VPC')
         string(name: 'SUBNET', defaultValue: 'subnet-pe-01', description: 'Nombre de la subred')
         string(name: 'NETWORK_SEGMENT', defaultValue: '10.0.1.0/24', description: 'Segmento de red CIDR')
         string(name: 'INTERFACE', defaultValue: 'nic0', description: 'Nombre de la interfaz de red principal')
