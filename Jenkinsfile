@@ -129,55 +129,68 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Terraform Init & Plan') {
-            steps {
-                dir('terraform') {
-                    script {
-                        echo '================================================'
-                        echo '              INICIALIZANDO TERRAFORM          '
-                        echo '================================================'
-                        sh 'terraform init'
+    steps {
+        dir('terraform') {
+            script {
+                withCredentials([file(credentialsId: 'gcp-key-platform', variable: 'GOOGLE_CREDENTIALS')]) {
+                    echo '================================================'
+                    echo '              INICIALIZANDO TERRAFORM          '
+                    echo '================================================'
+                    sh '''
+                    export GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_CREDENTIALS
+                    terraform init
 
-                        echo '================================================'
-                        echo '              EJECUTANDO PLAN DE TERRAFORM      '
-                        echo '================================================'
-                        sh 'terraform plan -out=tfplan'
-                    }
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                dir('terraform') {
-                    script {
-                        echo '================================================'
-                        echo '             EJECUTANDO APPLY DE TERRAFORM      '
-                        echo '================================================'
-                        sh 'terraform apply tfplan'
-                    }
-                }
-            }
-        }
-
-        stage('Terraform Destroy') {
-            when {
-                expression { return params.ENVIRONMENT == '3-Producción' }
-            }
-            steps {
-                dir('terraform') {
-                    script {
-                        echo '================================================'
-                        echo '             EJECUTANDO DESTROY DE TERRAFORM    '
-                        echo '================================================'
-                        sh 'terraform destroy -auto-approve'
-                    }
+                    echo '================================================'
+                    echo '              EJECUTANDO PLAN DE TERRAFORM      '
+                    echo '================================================'
+                    terraform plan -out=tfplan
+                    '''
                 }
             }
         }
     }
+}
 
+stage('Terraform Apply') {
+    steps {
+        dir('terraform') {
+            script {
+                withCredentials([file(credentialsId: 'gcp-key-platform', variable: 'GOOGLE_CREDENTIALS')]) {
+                    sh '''
+                    export GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_CREDENTIALS
+                    echo '================================================'
+                    echo '             EJECUTANDO APPLY DE TERRAFORM      '
+                    echo '================================================'
+                    terraform apply tfplan
+                    '''
+                }
+            }
+        }
+    }
+}
+
+stage('Terraform Destroy') {
+    when {
+        expression { return params.ENVIRONMENT == '3-Producción' }
+    }
+    steps {
+        dir('terraform') {
+            script {
+                withCredentials([file(credentialsId: 'gcp-key-platform', variable: 'GOOGLE_CREDENTIALS')]) {
+                    sh '''
+                    export GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_CREDENTIALS
+                    echo '================================================'
+                    echo '             EJECUTANDO DESTROY DE TERRAFORM    '
+                    echo '================================================'
+                    terraform destroy -auto-approve
+                    '''
+                }
+            }
+        }
+    }
+}
     post {
         success {
             echo '\nPipeline ejecutado exitosamente'
