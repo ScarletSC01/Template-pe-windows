@@ -4,7 +4,7 @@
 PROJECT_ID                = "jenkins-terraform-demo-472920"
 REGION                    = "us-central1"
 ZONE                      = "us-central1-a"
-ENVIRONMENT               = "1-Desarrollo"
+ENVIRONMENT               = "desarrollo-1"
 
 # ================================================================
 # CONFIGURACIÓN DE LA MÁQUINA VIRTUAL
