@@ -25,6 +25,7 @@ OS_TYPE                   = "windows-2025"
 # ================================================================
 DISK_SIZE                 = "100"
 DISK_TYPE                 = "pd-ssd"
+AUTO_DELETE_DISK          = "true"
 
 # ================================================================
 # CONFIGURACIÓN DE INFRAESTRUCTURA
@@ -62,4 +63,3 @@ ENABLE_STARTUP_SCRIPT      = "false"
 # ================================================================
 ENABLE_DELETION_PROTECTION = "false"
 CHECK_DELETE               = "false"
-AUTO_DELETE_DISK           = "true"
