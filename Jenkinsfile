@@ -84,11 +84,11 @@ pipeline {
     stages {
         stage('Validación de Parámetros') {
             steps {
-                script { ->
+                script {
                     echo '================================================'
                     echo '         VALIDACIÓN DE PARÁMETROS              '
                     echo '================================================'
-                    
+
                     def errores = []
                     // ... (tu código de validación sigue igual)
                     
@@ -97,7 +97,7 @@ pipeline {
                         errores.each { echo "  - ${it}" }
                         error('Validación de parámetros fallida')
                     }
-                    
+
                     echo 'Validación de parámetros completada exitosamente'
                 }
             }
@@ -105,7 +105,7 @@ pipeline {
 
         stage('Mostrar Configuración') {
             steps {
-                script { ->
+                script {
                     // ... (configuración de la VM, red, etc. sigue igual)
                 }
             }
@@ -113,7 +113,7 @@ pipeline {
 
         stage('Resumen Pre-Despliegue') {
             steps {
-                script { ->
+                script {
                     // ... (resumen de parámetros sigue igual)
                 }
             }
@@ -121,22 +121,27 @@ pipeline {
 
         stage('Terraform Plan') {
             steps {
-                script { ->
-                    echo '================================================'
-                    echo '              EJECUTANDO PLAN DE TERRAFORM      '
-                    echo '================================================'
-                    sh 'terraform plan -out=tfplan'
+                dir('terraform') {  // Aquí nos movemos a la carpeta donde están los .tf
+                    script {
+                        echo '================================================'
+                        echo '              EJECUTANDO PLAN DE TERRAFORM      '
+                        echo '================================================'
+                        sh 'terraform init'   // Inicializa Terraform antes del plan
+                        sh 'terraform plan -out=tfplan'
+                    }
                 }
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                script { ->
-                    echo '================================================'
-                    echo '             EJECUTANDO APPLY DE TERRAFORM      '
-                    echo '================================================'
-                    sh 'terraform apply tfplan'
+                dir('terraform') {
+                    script {
+                        echo '================================================'
+                        echo '             EJECUTANDO APPLY DE TERRAFORM      '
+                        echo '================================================'
+                        sh 'terraform apply -auto-approve tfplan'
+                    }
                 }
             }
         }
@@ -146,11 +151,13 @@ pipeline {
                 expression { return params.ENVIRONMENT == '3-Producción' }
             }
             steps {
-                script { ->
-                    echo '================================================'
-                    echo '             EJECUTANDO DESTROY DE TERRAFORM    '
-                    echo '================================================'
-                    sh 'terraform destroy -auto-approve'
+                dir('terraform') {
+                    script {
+                        echo '================================================'
+                        echo '             EJECUTANDO DESTROY DE TERRAFORM    '
+                        echo '================================================'
+                        sh 'terraform destroy -auto-approve'
+                    }
                 }
             }
         }
