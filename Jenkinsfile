@@ -24,7 +24,7 @@ pipeline {
         choice(name: 'VM_TYPE', choices: ['n2-standard', 'e2-standard'], description: 'Familia de tipo de máquina virtual')
         string(name: 'VM_CORES', defaultValue: '2', description: 'Número de vCPUs para la máquina virtual')
         string(name: 'VM_MEMORY', defaultValue: '8', description: 'Memoria RAM en GB')
-        choice(name: 'OS_TYPE', choices: ['Windows-server-2025-dc', 'Windows-server-2022-dc', 'Windows-server-2019-dc'], description: 'Versión del sistema operativo')
+        choice(name: 'OS_TYPE', choices: ['windows-server-2022-dc', 'Windows-server-2022-dc', 'Windows-server-2019-dc'], description: 'Versión del sistema operativo')
         string(name: 'DISK_SIZE', defaultValue: '100', description: 'Tamaño del disco persistente en GB')
         choice(name: 'DISK_TYPE', choices: ['pd-ssd', 'pd-balanced', 'pd-standard'], description: 'Tipo de disco')
         choice(name: 'INFRAESTRUCTURE_TYPE', choices: ['On-demand', 'Preemptible'], description: 'Tipo de infraestructura')
