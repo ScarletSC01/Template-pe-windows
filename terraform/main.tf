@@ -69,7 +69,10 @@ resource "google_compute_firewall" "firewall_rules" {
 
   direction     = "INGRESS"
   source_ranges = ["0.0.0.0/0"]
-  target_tags   = ["windows"]
+  tags = [
+  "windows",
+  regex_replace(lower(var.ENVIRONMENT), "^[^a-z]+", "env-")
+]
 }
 
 # ================================================================
