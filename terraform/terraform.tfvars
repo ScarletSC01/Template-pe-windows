@@ -18,7 +18,7 @@ VM_MEMORY                 = "8"
 # ================================================================
 # CONFIGURACIÓN DEL SISTEMA OPERATIVO
 # ================================================================
-OS_TYPE                   = "Windows-server-2025-dc"
+OS_TYPE                   = "windows-server-2022-dc"
 
 # ================================================================
 # CONFIGURACIÓN DE ALMACENAMIENTO
