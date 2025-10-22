@@ -22,8 +22,9 @@ resource "google_compute_instance" "vm_windows" {
   }
 
   network_interface {
-    network    = var.VPC_NETWORK
-    subnetwork = var.SUBNET != "" ? var.SUBNET : null
+    network    = google_compute_network.vpc_network.id
+    subnetwork = google_compute_subnetwork.subnet.id
+
 
     dynamic "access_config" {
       for_each = var.PUBLIC_IP == "true" ? [1] : []
