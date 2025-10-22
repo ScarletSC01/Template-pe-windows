@@ -21,7 +21,6 @@ resource "google_compute_instance" "vm_windows" {
   }
 
   network_interface {
-    name       = var.INTERFACE
     network    = var.VPC_NETWORK
     subnetwork = var.SUBNET != "" ? var.SUBNET : null
 
