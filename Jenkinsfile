@@ -105,7 +105,7 @@ pipeline {
             steps {
                 dir('terraform') {
                     script {
-                        withCredentials([file(credentialsId: 'gcp-key-platform', variable: 'GOOGLE_CREDENTIALS')]) {
+                        withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
                             sh """
                                 export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
                                 echo '================================================'
@@ -127,7 +127,7 @@ pipeline {
             steps {
                 dir('terraform') {
                     script {
-                        withCredentials([file(credentialsId: 'gcp-key-platform', variable: 'GOOGLE_CREDENTIALS')]) {
+                        withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
                             sh """
                                 export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
                                 echo '================================================'
@@ -148,7 +148,7 @@ pipeline {
             steps {
                 dir('terraform') {
                     script {
-                        withCredentials([file(credentialsId: 'gcp-key-platform', variable: 'GOOGLE_CREDENTIALS')]) {
+                        withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
                             sh """
                                 export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
                                 echo '================================================'
