@@ -7,27 +7,25 @@ provider "google" {
 # ================================================================
 # CONFIGURACIÓN DE LA MÁQUINA VIRTUAL WINDOWS
 # ================================================================
-
 resource "google_compute_instance" "vm_windows" {
   name         = var.VM_NAME
   machine_type = "${var.VM_TYPE}-${var.VM_CORES}"
 
   boot_disk {
     initialize_params {
-      image = "projects/windows-cloud/global/images/family/${var.OS_TYPE}"
+      image = "projects/windows-cloud/global/images/family/${var.OS_TYPE}" # Asegúrate: windows-2016, windows-2022, windows-2025
       size  = var.DISK_SIZE
       type  = var.DISK_TYPE
     }
-    auto_delete = var.AUTO_DELETE_DISK == "true" ? true : false
+    auto_delete = var.AUTO_DELETE_DISK
   }
 
   network_interface {
     network    = google_compute_network.vpc_network.id
     subnetwork = google_compute_subnetwork.subnet.id
 
-
     dynamic "access_config" {
-      for_each = var.PUBLIC_IP == "true" ? [1] : []
+      for_each = var.PUBLIC_IP ? [1] : []
       content {}
     }
   }
@@ -39,15 +37,15 @@ resource "google_compute_instance" "vm_windows" {
 
   metadata = {
     enable-oslogin = "TRUE"
-    startup-script = var.ENABLE_STARTUP_SCRIPT == "true" ? file("startup.ps1") : ""
+    startup-script = var.ENABLE_STARTUP_SCRIPT ? file("startup.ps1") : ""
   }
 
   tags = [
     "windows",
-     regex_replace(lower(var.ENVIRONMENT), "^[^a-z]+", "env-")
-     ]
+    regex_replace(lower(var.ENVIRONMENT), "^[^a-z]+", "env-")
+  ]
 
-  deletion_protection = var.ENABLE_DELETION_PROTECTION == "true" ? true : false
+  deletion_protection = var.ENABLE_DELETION_PROTECTION
 
   labels = {
     sistema_operativo = "windows"
@@ -60,7 +58,7 @@ resource "google_compute_instance" "vm_windows" {
 # ================================================================
 resource "google_compute_firewall" "firewall_rules" {
   name    = "${var.VM_NAME}-firewall"
-  network = var.VPC_NETWORK
+  network = google_compute_network.vpc_network.id
 
   allow {
     protocol = "tcp"
@@ -69,10 +67,7 @@ resource "google_compute_firewall" "firewall_rules" {
 
   direction     = "INGRESS"
   source_ranges = ["0.0.0.0/0"]
-  tags = [
-  "windows",
-  regex_replace(lower(var.ENVIRONMENT), "^[^a-z]+", "env-")
-]
+  target_tags   = ["windows"]
 }
 
 # ================================================================
