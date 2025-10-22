@@ -46,6 +46,7 @@ variable "VM_MEMORY" {
 variable "OS_TYPE" {
   description = "Versión del sistema operativo Windows Server Datacenter"
   type        = string
+  default     = "windows-server-2022-dc"
 }
 
 variable "DISK_SIZE" {
