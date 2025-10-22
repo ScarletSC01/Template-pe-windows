@@ -24,7 +24,6 @@ resource "google_compute_instance" "vm_windows" {
     name       = var.INTERFACE
     network    = var.VPC_NETWORK
     subnetwork = var.SUBNET != "" ? var.SUBNET : null
-    private_ip = var.PRIVATE_IP == "true" ? "Ephemeral" : null
 
     dynamic "access_config" {
       for_each = var.PUBLIC_IP == "true" ? [1] : []
