@@ -88,16 +88,16 @@ pipeline {
                     echo '================================================'
                     echo '         VALIDACIÓN DE PARÁMETROS              '
                     echo '================================================'
-                    
+
                     def errores = []
                     // ... (tu código de validación sigue igual)
-                    
+
                     if (errores.size() > 0) {
                         echo 'Errores de validación:'
                         errores.each { echo "  - ${it}" }
                         error('Validación de parámetros fallida')
                     }
-                    
+
                     echo 'Validación de parámetros completada exitosamente'
                 }
             }
@@ -119,9 +119,9 @@ pipeline {
             steps {
                 script {
                     echo '================================================'
-                    echo '            RESUMEN DE CONFIGURACIÓN            '
+                    echo '              RESUMEN DE CONFIGURACIÓN         '
                     echo '================================================'
-                    echo "Sistema Operativo Base: ${SISTEMA_OPERATIVO_BASE}"
+                    echo "Sistema Operativo Base: ${env.SISTEMA_OPERATIVO_BASE}"
                     echo "Tipo de Procesador: ${params.PROCESSOR_TECH}"
                     echo "Memoria RAM (GB): ${params.VM_MEMORY}"
                     echo "Disco (GB): ${params.DISK_SIZE}"
@@ -130,31 +130,33 @@ pipeline {
             }
         }
 
-        stage('Terraform Plan') {
+        stage('Terraform Init & Plan') {
             steps {
-                script {
-                    echo '================================================'
-                    echo '              EJECUTANDO PLAN DE TERRAFORM      '
-                    echo '================================================'
-                    sh '''
-                        cd terraform
-                        terraform init
-                        terraform plan -out=tfplan
-                    '''
+                dir('terraform') {
+                    script {
+                        echo '================================================'
+                        echo '              INICIALIZANDO TERRAFORM          '
+                        echo '================================================'
+                        sh 'terraform init'
+
+                        echo '================================================'
+                        echo '              EJECUTANDO PLAN DE TERRAFORM      '
+                        echo '================================================'
+                        sh 'terraform plan -out=tfplan'
+                    }
                 }
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                script {
-                    echo '================================================'
-                    echo '             EJECUTANDO APPLY DE TERRAFORM      '
-                    echo '================================================'
-                    sh '''
-                        cd terraform
-                        terraform apply -auto-approve tfplan
-                    '''
+                dir('terraform') {
+                    script {
+                        echo '================================================'
+                        echo '             EJECUTANDO APPLY DE TERRAFORM      '
+                        echo '================================================'
+                        sh 'terraform apply tfplan'
+                    }
                 }
             }
         }
@@ -164,14 +166,13 @@ pipeline {
                 expression { return params.ENVIRONMENT == '3-Producción' }
             }
             steps {
-                script {
-                    echo '================================================'
-                    echo '             EJECUTANDO DESTROY DE TERRAFORM    '
-                    echo '================================================'
-                    sh '''
-                        cd terraform
-                        terraform destroy -auto-approve
-                    '''
+                dir('terraform') {
+                    script {
+                        echo '================================================'
+                        echo '             EJECUTANDO DESTROY DE TERRAFORM    '
+                        echo '================================================'
+                        sh 'terraform destroy -auto-approve'
+                    }
                 }
             }
         }
