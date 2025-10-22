@@ -88,7 +88,7 @@ pipeline {
                     echo '================================================'
                     echo '         VALIDACIÓN DE PARÁMETROS              '
                     echo '================================================'
-
+                    
                     def errores = []
                     // ... (tu código de validación sigue igual)
                     
@@ -97,7 +97,7 @@ pipeline {
                         errores.each { echo "  - ${it}" }
                         error('Validación de parámetros fallida')
                     }
-
+                    
                     echo 'Validación de parámetros completada exitosamente'
                 }
             }
@@ -106,7 +106,11 @@ pipeline {
         stage('Mostrar Configuración') {
             steps {
                 script {
-                    // ... (configuración de la VM, red, etc. sigue igual)
+                    echo "Proyecto: ${params.PROYECT_ID}"
+                    echo "Región: ${params.REGION}"
+                    echo "Zona: ${params.ZONE}"
+                    echo "Nombre VM: ${params.VM_NAME}"
+                    echo "Tipo de OS: ${params.OS_TYPE}"
                 }
             }
         }
@@ -114,34 +118,43 @@ pipeline {
         stage('Resumen Pre-Despliegue') {
             steps {
                 script {
-                    // ... (resumen de parámetros sigue igual)
+                    echo '================================================'
+                    echo '            RESUMEN DE CONFIGURACIÓN            '
+                    echo '================================================'
+                    echo "Sistema Operativo Base: ${SISTEMA_OPERATIVO_BASE}"
+                    echo "Tipo de Procesador: ${params.PROCESSOR_TECH}"
+                    echo "Memoria RAM (GB): ${params.VM_MEMORY}"
+                    echo "Disco (GB): ${params.DISK_SIZE}"
+                    echo "Infraestructura: ${params.INFRAESTRUCTURE_TYPE}"
                 }
             }
         }
 
         stage('Terraform Plan') {
             steps {
-                dir('terraform') {  // Aquí nos movemos a la carpeta donde están los .tf
-                    script {
-                        echo '================================================'
-                        echo '              EJECUTANDO PLAN DE TERRAFORM      '
-                        echo '================================================'
-                        sh 'terraform init'   // Inicializa Terraform antes del plan
-                        sh 'terraform plan -out=tfplan'
-                    }
+                script {
+                    echo '================================================'
+                    echo '              EJECUTANDO PLAN DE TERRAFORM      '
+                    echo '================================================'
+                    sh '''
+                        cd terraform
+                        terraform init
+                        terraform plan -out=tfplan
+                    '''
                 }
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                dir('terraform') {
-                    script {
-                        echo '================================================'
-                        echo '             EJECUTANDO APPLY DE TERRAFORM      '
-                        echo '================================================'
-                        sh 'terraform apply -auto-approve tfplan'
-                    }
+                script {
+                    echo '================================================'
+                    echo '             EJECUTANDO APPLY DE TERRAFORM      '
+                    echo '================================================'
+                    sh '''
+                        cd terraform
+                        terraform apply -auto-approve tfplan
+                    '''
                 }
             }
         }
@@ -151,13 +164,14 @@ pipeline {
                 expression { return params.ENVIRONMENT == '3-Producción' }
             }
             steps {
-                dir('terraform') {
-                    script {
-                        echo '================================================'
-                        echo '             EJECUTANDO DESTROY DE TERRAFORM    '
-                        echo '================================================'
-                        sh 'terraform destroy -auto-approve'
-                    }
+                script {
+                    echo '================================================'
+                    echo '             EJECUTANDO DESTROY DE TERRAFORM    '
+                    echo '================================================'
+                    sh '''
+                        cd terraform
+                        terraform destroy -auto-approve
+                    '''
                 }
             }
         }
