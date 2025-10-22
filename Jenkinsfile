@@ -51,8 +51,8 @@ pipeline {
         // CONFIGURACIÓN DE RED
         // ========================================
         string(name: 'VPC_NETWORK', defaultValue: 'default', description: 'Nombre de la red VPC (Virtual Private Cloud)')
-        string(name: 'SUBNET', defaultValue: '', description: 'Nombre de la subred dentro de la VPC')
-        string(name: 'NETWORK_SEGMENT', defaultValue: '', description: 'Segmento de red CIDR (ejemplo: 10.0.1.0/24, 192.168.1.0/24)')
+        string(name: 'SUBNET', defaultValue: 'subnet-pe-01', description: 'Nombre de la subred dentro de la VPC')
+        string(name: 'NETWORK_SEGMENT', defaultValue: '10.0.1.0/24', description: 'Segmento de red CIDR (ejemplo: 10.0.1.0/24, 192.168.1.0/24)')
         string(name: 'INTERFACE', defaultValue: 'nic0', description: 'Nombre de la interfaz de red principal')
         choice(name: 'PRIVATE_IP', choices: ['true', 'false'], description: 'Asignar dirección IP privada estática')
         choice(name: 'PUBLIC_IP', choices: ['false', 'true'], description: 'Asignar dirección IP pública (externa) a la VM')
