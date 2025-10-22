@@ -43,8 +43,8 @@ resource "google_compute_instance" "vm_windows" {
 
   tags = [
     "windows",
-    lower(var.ENVIRONMENT),
-  ]
+     regex_replace(lower(var.ENVIRONMENT), "^[^a-z]+", "env-")
+     ]
 
   deletion_protection = var.ENABLE_DELETION_PROTECTION == "true" ? true : false
 
