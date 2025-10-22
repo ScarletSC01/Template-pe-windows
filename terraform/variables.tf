@@ -14,7 +14,7 @@ variable "ZONE" {
 }
 
 variable "ENVIRONMENT" {
-  description = "Ambiente de despliegue (1-Desarrollo, 2-Test, 3-Prod)"
+  description = "Ambiente de despliegue (desarrollo-1, 2-pre-produccion-1, produccion-3)"
   type        = string
 }
 
