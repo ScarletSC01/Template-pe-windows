@@ -2,11 +2,8 @@ pipeline {
     agent any
 
     environment {
-        // Cambia el país a Perú
         PAIS = 'PE'
         SISTEMA_OPERATIVO_BASE = 'Windows'
-        
-        // Configuración de snapshots
         SNAPSHOT_ENABLED = 'true'
     }
 
@@ -20,185 +17,80 @@ pipeline {
         // ========================================
         // CONFIGURACIÓN DE PROYECTO GCP
         // ========================================
-        string(
-            name: 'PROYECT_ID', 
-            defaultValue: '', 
-            description: 'ID del proyecto en Google Cloud Platform'
-        )
-        string(
-            name: 'REGION', 
-            defaultValue: 'us-central1', 
-            description: 'Región de GCP donde se desplegará la VM (ejemplo: us-central1, southamerica-west1)'
-        )
-        string(
-            name: 'ZONE', 
-            defaultValue: 'us-central1-a', 
-            description: 'Zona de disponibilidad específica (ejemplo: us-central1-a, southamerica-west1-b)'
-        )
-        choice(
-            name: 'ENVIRONMENT', 
-            choices: ['1-Desarrollo', '2-Pre productivo (PP)', '3-Producción'], 
-            description: 'Ambiente de despliegue de la infraestructura'
-        )
-        
+        string(name: 'PROYECT_ID', defaultValue: '', description: 'ID del proyecto en Google Cloud Platform')
+        string(name: 'REGION', defaultValue: 'us-central1', description: 'Región de GCP donde se desplegará la VM (ejemplo: us-central1, southamerica-west1)')
+        string(name: 'ZONE', defaultValue: 'us-central1-a', description: 'Zona de disponibilidad específica (ejemplo: us-central1-a, southamerica-west1-b)')
+        choice(name: 'ENVIRONMENT', choices: ['1-Desarrollo', '2-Pre productivo (PP)', '3-Producción'], description: 'Ambiente de despliegue de la infraestructura')
+
         // ========================================
         // CONFIGURACIÓN DE LA MÁQUINA VIRTUAL
         // ========================================
-        string(
-            name: 'VM_NAME', 
-            defaultValue: '', 
-            description: 'Nombre único para la máquina virtual (debe cumplir con convenciones de nomenclatura de GCP)'
-        )
-        choice(
-            name: 'PROCESSOR_TECH', 
-            choices: ['n2', 'e2'], 
-            description: 'Tecnología de procesador (N2: Intel Cascade Lake o Ice Lake, E2: Última generación optimizada para costos)'
-        )
-        choice(
-            name: 'VM_TYPE', 
-            choices: ['n2-standard', 'e2-standard'], 
-            description: 'Familia de tipo de máquina virtual'
-        )
-        string(
-            name: 'VM_CORES', 
-            defaultValue: '2', 
-            description: 'Número de vCPUs para la máquina virtual (ejemplo: 2, 4, 8)'
-        )
-        string(
-            name: 'VM_MEMORY', 
-            defaultValue: '8', 
-            description: 'Memoria RAM en GB (ejemplo: 4, 8, 16, 32)'
-        )
-        
+        string(name: 'VM_NAME', defaultValue: '', description: 'Nombre único para la máquina virtual (debe cumplir con convenciones de nomenclatura de GCP)')
+        choice(name: 'PROCESSOR_TECH', choices: ['n2', 'e2'], description: 'Tecnología de procesador (N2: Intel Cascade Lake o Ice Lake, E2: Última generación optimizada para costos)')
+        choice(name: 'VM_TYPE', choices: ['n2-standard', 'e2-standard'], description: 'Familia de tipo de máquina virtual')
+        string(name: 'VM_CORES', defaultValue: '2', description: 'Número de vCPUs para la máquina virtual (ejemplo: 2, 4, 8)')
+        string(name: 'VM_MEMORY', defaultValue: '8', description: 'Memoria RAM en GB (ejemplo: 4, 8, 16, 32)')
+
         // ========================================
         // CONFIGURACIÓN DEL SISTEMA OPERATIVO
         // ========================================
-        choice(
-            name: 'OS_TYPE', 
-            choices: ['Windows-server-2025-dc', 'Windows-server-2022-dc', 'Windows-server-2019-dc'], 
-            description: 'Versión del sistema operativo Windows Server Datacenter'
-        )
-        
+        choice(name: 'OS_TYPE', choices: ['Windows-server-2025-dc', 'Windows-server-2022-dc', 'Windows-server-2019-dc'], description: 'Versión del sistema operativo Windows Server Datacenter')
+
         // ========================================
         // CONFIGURACIÓN DE ALMACENAMIENTO
         // ========================================
-        string(
-            name: 'DISK_SIZE', 
-            defaultValue: '100', 
-            description: 'Tamaño del disco persistente en GB (mínimo 50 GB para Windows Server)'
-        )
-        choice(
-            name: 'DISK_TYPE', 
-            choices: ['pd-ssd', 'pd-balanced', 'pd-standard'], 
-            description: 'Tipo de disco (SSD: Mayor rendimiento, Balanced: Equilibrio, Standard: Económico)'
-        )
-        
+        string(name: 'DISK_SIZE', defaultValue: '100', description: 'Tamaño del disco persistente en GB (mínimo 50 GB para Windows Server)')
+        choice(name: 'DISK_TYPE', choices: ['pd-ssd', 'pd-balanced', 'pd-standard'], description: 'Tipo de disco (SSD: Mayor rendimiento, Balanced: Equilibrio, Standard: Económico)')
+
         // ========================================
         // CONFIGURACIÓN DE INFRAESTRUCTURA
         // ========================================
-        choice(
-            name: 'INFRAESTRUCTURE_TYPE', 
-            choices: ['On-demand', 'Preemptible'], 
-            description: 'Tipo de infraestructura (On-demand: Siempre disponible, Preemptible: Hasta 80% más económico pero puede interrumpirse)'
-        )
-        
+        choice(name: 'INFRAESTRUCTURE_TYPE', choices: ['On-demand', 'Preemptible'], description: 'Tipo de infraestructura (On-demand: Siempre disponible, Preemptible: Hasta 80% más económico pero puede interrumpirse)')
+
         // ========================================
         // CONFIGURACIÓN DE RED
         // ========================================
-        string(
-            name: 'VPC_NETWORK', 
-            defaultValue: 'default', 
-            description: 'Nombre de la red VPC (Virtual Private Cloud)'
-        )
-        string(
-            name: 'SUBNET', 
-            defaultValue: '', 
-            description: 'Nombre de la subred dentro de la VPC'
-        )
-        string(
-            name: 'NETWORK_SEGMENT', 
-            defaultValue: '', 
-            description: 'Segmento de red CIDR (ejemplo: 10.0.1.0/24, 192.168.1.0/24)'
-        )
-        string(
-            name: 'INTERFACE', 
-            defaultValue: 'nic0', 
-            description: 'Nombre de la interfaz de red principal'
-        )
-        choice(
-            name: 'PRIVATE_IP', 
-            choices: ['true', 'false'], 
-            description: 'Asignar dirección IP privada estática'
-        )
-        choice(
-            name: 'PUBLIC_IP', 
-            choices: ['false', 'true'], 
-            description: 'Asignar dirección IP pública (externa) a la VM'
-        )
-        
+        string(name: 'VPC_NETWORK', defaultValue: 'default', description: 'Nombre de la red VPC (Virtual Private Cloud)')
+        string(name: 'SUBNET', defaultValue: '', description: 'Nombre de la subred dentro de la VPC')
+        string(name: 'NETWORK_SEGMENT', defaultValue: '', description: 'Segmento de red CIDR (ejemplo: 10.0.1.0/24, 192.168.1.0/24)')
+        string(name: 'INTERFACE', defaultValue: 'nic0', description: 'Nombre de la interfaz de red principal')
+        choice(name: 'PRIVATE_IP', choices: ['true', 'false'], description: 'Asignar dirección IP privada estática')
+        choice(name: 'PUBLIC_IP', choices: ['false', 'true'], description: 'Asignar dirección IP pública (externa) a la VM')
+
         // ========================================
         // CONFIGURACIÓN DE SEGURIDAD
         // ========================================
-        string(
-            name: 'FIREWALL_RULES', 
-            defaultValue: 'allow-rdp,allow-winrm', 
-            description: 'Reglas de firewall separadas por comas (ejemplo: allow-rdp,allow-winrm,allow-https)'
-        )
-        string(
-            name: 'SERVICE_ACCOUNT', 
-            defaultValue: '', 
-            description: 'Cuenta de servicio para la VM (dejar vacío para usar la cuenta predeterminada)'
-        )
-        
+        string(name: 'FIREWALL_RULES', defaultValue: 'allow-rdp,allow-winrm', description: 'Reglas de firewall separadas por comas (ejemplo: allow-rdp,allow-winrm,allow-https)')
+        string(name: 'SERVICE_ACCOUNT', defaultValue: '', description: 'Cuenta de servicio para la VM (dejar vacío para usar la cuenta predeterminada)')
+
         // ========================================
         // ETIQUETAS Y METADATOS
         // ========================================
-        string(
-            name: 'LABEL', 
-            defaultValue: '', 
-            description: 'Etiquetas personalizadas para la VM en formato key=value (ejemplo: app=web,tier=frontend)'
-        )
-        
+        string(name: 'LABEL', defaultValue: '', description: 'Etiquetas personalizadas para la VM en formato key=value (ejemplo: app=web,tier=frontend)')
+
         // ========================================
         // CONFIGURACIÓN DE SCRIPTS Y ARRANQUE
         // ========================================
-        choice(
-            name: 'ENABLE_STARTUP_SCRIPT', 
-            choices: ['false', 'true'], 
-            description: 'Habilitar script de inicio personalizado'
-        )
-        
+        choice(name: 'ENABLE_STARTUP_SCRIPT', choices: ['false', 'true'], description: 'Habilitar script de inicio personalizado')
+
         // ========================================
         // OPCIONES DE GESTIÓN
         // ========================================
-        choice(
-            name: 'ENABLE_DELETION_PROTECTION', 
-            choices: ['false', 'true'], 
-            description: 'Proteger la VM contra eliminación accidental'
-        )
-        choice(
-            name: 'CHECK_DELETE', 
-            choices: ['false', 'true'], 
-            description: 'Solicitar confirmación antes de eliminar recursos'
-        )
-        choice(
-            name: 'AUTO_DELETE_DISK', 
-            choices: ['true', 'false'], 
-            description: 'Eliminar automáticamente el disco al eliminar la VM'
-        )
+        choice(name: 'ENABLE_DELETION_PROTECTION', choices: ['false', 'true'], description: 'Proteger la VM contra eliminación accidental')
+        choice(name: 'CHECK_DELETE', choices: ['false', 'true'], description: 'Solicitar confirmación antes de eliminar recursos')
+        choice(name: 'AUTO_DELETE_DISK', choices: ['true', 'false'], description: 'Eliminar automáticamente el disco al eliminar la VM')
     }
 
     stages {
         stage('Validación de Parámetros') {
             steps {
-                script {
+                script { ->
                     echo '================================================'
                     echo '         VALIDACIÓN DE PARÁMETROS              '
                     echo '================================================'
                     
-                    // Validaciones críticas
                     def errores = []
-                    // ... (el código de validación sigue igual)
+                    // ... (tu código de validación sigue igual)
                     
                     if (errores.size() > 0) {
                         echo 'Errores de validación:'
@@ -213,7 +105,7 @@ pipeline {
 
         stage('Mostrar Configuración') {
             steps {
-                script {
+                script { ->
                     // ... (configuración de la VM, red, etc. sigue igual)
                 }
             }
@@ -221,51 +113,47 @@ pipeline {
 
         stage('Resumen Pre-Despliegue') {
             steps {
-                script {
+                script { ->
                     // ... (resumen de parámetros sigue igual)
                 }
             }
         }
 
-        // Nueva etapa "Plan" para Terraform
         stage('Terraform Plan') {
             steps {
-                script {
+                script { ->
                     echo '================================================'
                     echo '              EJECUTANDO PLAN DE TERRAFORM      '
                     echo '================================================'
-                    sh 'terraform plan -out=tfplan'  // Ejemplo de comando para Terraform Plan
+                    sh 'terraform plan -out=tfplan'
                 }
             }
         }
 
-        // Nueva etapa "Apply" para Terraform
         stage('Terraform Apply') {
             steps {
-                script {
+                script { ->
                     echo '================================================'
                     echo '             EJECUTANDO APPLY DE TERRAFORM      '
                     echo '================================================'
-                    sh 'terraform apply tfplan'  // Aplica el plan generado previamente
+                    sh 'terraform apply tfplan'
                 }
             }
         }
 
-        // Nueva etapa "Destroy" para Terraform (opcional, generalmente se usa en limpieza)
         stage('Terraform Destroy') {
             when {
-                expression { return params.ENVIRONMENT == '3-Producción' } // Solo se ejecuta en Producción
+                expression { return params.ENVIRONMENT == '3-Producción' }
             }
             steps {
-                script {
+                script { ->
                     echo '================================================'
                     echo '             EJECUTANDO DESTROY DE TERRAFORM    '
                     echo '================================================'
-                    sh 'terraform destroy -auto-approve'  // Comando para destruir la infraestructura
+                    sh 'terraform destroy -auto-approve'
                 }
             }
         }
-
     }
 
     post {
