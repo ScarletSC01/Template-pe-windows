@@ -35,7 +35,7 @@ INFRAESTRUCTURE_TYPE      = "On-demand"
 # ================================================================
 # CONFIGURACIÓN DE RED
 # ================================================================
-VPC_NETWORK               = "default"
+VPC_NETWORK               = "vpc-pe-01"
 SUBNET                    = "subnet-pe-01"
 NETWORK_SEGMENT           = "10.0.1.0/24"
 INTERFACE                 = "nic0"
