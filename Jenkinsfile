@@ -156,7 +156,7 @@ pipeline {
         }
         */
 
-        //  NUEVO BLOQUE 1: CONSULTA ESTADO EN JIRA
+        // --- 🔹 NUEVO BLOQUE 1: CONSULTA ESTADO EN JIRA ---
         stage('Post-Jira Status') {
             steps {
                 script {
@@ -178,13 +178,13 @@ pipeline {
             }
         }
 
-        //  NUEVO BLOQUE 2: COMENTAR EN JIRA
+        // --- 🔹 NUEVO BLOQUE 2: COMENTAR EN JIRA ---
         stage('Post-Coment-jira') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
                         def auth = java.util.Base64.encoder.encodeToString("${JIRA_USER}:${JIRA_API_TOKEN}".getBytes("UTF-8"))
-                        def comentario = "Este ticket fue comentado por Lucaneitor"
+                        def comentario = "Este ticket fue comentado y enviado por Scarlet SC"
 
                         def response = sh(
                             script: """
@@ -234,4 +234,3 @@ pipeline {
         }
     }
 }
-
