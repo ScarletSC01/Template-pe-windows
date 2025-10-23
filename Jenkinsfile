@@ -5,6 +5,7 @@ pipeline {
         PAIS = 'PE'
         SISTEMA_OPERATIVO_BASE = 'Windows'
         SNAPSHOT_ENABLED = 'true'
+        JIRA_API_URL = "https://bancoripley1.atlassian.net/rest/api/3/issue/"
     }
 
     options {
@@ -43,6 +44,9 @@ pipeline {
         choice(name: 'ENABLE_DELETION_PROTECTION', choices: ['false', 'true'], description: 'Proteger la VM contra eliminación accidental')
         choice(name: 'CHECK_DELETE', choices: ['false', 'true'], description: 'Solicitar confirmación antes de eliminar recursos')
         choice(name: 'AUTO_DELETE_DISK', choices: ['true', 'false'], description: 'Eliminar automáticamente el disco al eliminar la VM')
+
+        // 🔹 Nuevo parámetro para ticket Jira
+        string(name: 'TICKET_JIRA', defaultValue: 'AJI-1', description: 'Ticket de Jira a consultar y comentar')
     }
 
     stages {
@@ -100,7 +104,7 @@ pipeline {
             }
         }
 
-        // --- BLOQUE TERRAFORM COMENTADO ---
+        // --- BLOQUES TERRAFORM COMENTADOS ---
         /*
         stage('Terraform Init & Plan') {
             steps {
@@ -152,16 +156,15 @@ pipeline {
         }
         */
 
-        // --- NUEVO BLOQUE: CONSULTA DE ESTADO EN JIRA ---
+        //  NUEVO BLOQUE 1: CONSULTA ESTADO EN JIRA
         stage('Post-Jira Status') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
                         def auth = java.util.Base64.encoder.encodeToString("${JIRA_USER}:${JIRA_API_TOKEN}".getBytes("UTF-8"))
-                        def JIRA_API_URL = "https://bancoripley1.atlassian.net/rest/api/3/issue/AJI-1"
                         def response = sh(
                             script: """
-                                curl -s -X GET "${JIRA_API_URL}" \\
+                                curl -s -X GET "${JIRA_API_URL}${params.TICKET_JIRA}" \\
                                 -H "Authorization: Basic ${auth}" \\
                                 -H "Accept: application/json"
                             """,
@@ -169,7 +172,47 @@ pipeline {
                         ).trim()
                         def json = new groovy.json.JsonSlurper().parseText(response)
                         def estado = json.fields.status.name
-                        echo "Estado actual del ticket ${JIRA_API_URL}: ${estado}"
+                        echo "Estado actual del ticket ${params.TICKET_JIRA}: ${estado}"
+                    }
+                }
+            }
+        }
+
+        //  NUEVO BLOQUE 2: COMENTAR EN JIRA
+        stage('Post-Coment-jira') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
+                        def auth = java.util.Base64.encoder.encodeToString("${JIRA_USER}:${JIRA_API_TOKEN}".getBytes("UTF-8"))
+                        def comentario = "Este ticket fue comentado por Lucaneitor"
+
+                        def response = sh(
+                            script: """
+                                curl -s -X POST "${JIRA_API_URL}${params.TICKET_JIRA}/comment" \\
+                                -H "Authorization: Basic ${auth}" \\
+                                -H "Content-Type: application/json" \\
+                                -d '{
+                                    "body": {
+                                        "type": "doc",
+                                        "version": 1,
+                                        "content": [
+                                            {
+                                                "type": "paragraph",
+                                                "content": [
+                                                    {
+                                                        "type": "text",
+                                                        "text": "${comentario}"
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    }
+                                }'
+                            """,
+                            returnStdout: true
+                        ).trim()
+
+                        echo "Comentario enviado al ticket ${params.TICKET_JIRA}: ${response}"
                     }
                 }
             }
@@ -191,3 +234,4 @@ pipeline {
         }
     }
 }
+
