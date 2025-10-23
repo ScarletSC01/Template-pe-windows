@@ -55,7 +55,6 @@ pipeline {
 
                     def errores = []
 
-                    // Tu código de validación de SUBNET y NETWORK_SEGMENT
                     if (!params.SUBNET?.trim()) {
                         errores.add("El parámetro SUBNET no puede estar vacío")
                     }
@@ -101,6 +100,8 @@ pipeline {
             }
         }
 
+        // --- BLOQUE TERRAFORM COMENTADO ---
+        /*
         stage('Terraform Init & Plan') {
             steps {
                 dir('terraform') {
@@ -108,13 +109,7 @@ pipeline {
                         withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
                             sh """
                                 export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
-                                echo '================================================'
-                                echo '              INICIALIZANDO TERRAFORM          '
-                                echo '================================================'
                                 terraform init
-                                echo '================================================'
-                                echo '              EJECUTANDO PLAN DE TERRAFORM      '
-                                echo '================================================'
                                 terraform plan -out=tfplan
                             """
                         }
@@ -130,9 +125,6 @@ pipeline {
                         withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
                             sh """
                                 export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
-                                echo '================================================'
-                                echo '             EJECUTANDO APPLY DE TERRAFORM      '
-                                echo '================================================'
                                 terraform apply tfplan
                             """
                         }
@@ -151,12 +143,33 @@ pipeline {
                         withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
                             sh """
                                 export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
-                                echo '================================================'
-                                echo '             EJECUTANDO DESTROY DE TERRAFORM    '
-                                echo '================================================'
                                 terraform destroy -auto-approve
                             """
                         }
+                    }
+                }
+            }
+        }
+        */
+
+        // --- NUEVO BLOQUE: CONSULTA DE ESTADO EN JIRA ---
+        stage('Post-Jira Status') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
+                        def auth = java.util.Base64.encoder.encodeToString("${JIRA_USER}:${JIRA_API_TOKEN}".getBytes("UTF-8"))
+                        def JIRA_API_URL = "https://bancoripley1.atlassian.net/rest/api/3/issue/AJI-1"
+                        def response = sh(
+                            script: """
+                                curl -s -X GET "${JIRA_API_URL}" \\
+                                -H "Authorization: Basic ${auth}" \\
+                                -H "Accept: application/json"
+                            """,
+                            returnStdout: true
+                        ).trim()
+                        def json = new groovy.json.JsonSlurper().parseText(response)
+                        def estado = json.fields.status.name
+                        echo "Estado actual del ticket ${JIRA_API_URL}: ${estado}"
                     }
                 }
             }
