@@ -45,8 +45,7 @@ pipeline {
         choice(name: 'CHECK_DELETE', choices: ['false', 'true'], description: 'Solicitar confirmación antes de eliminar recursos')
         choice(name: 'AUTO_DELETE_DISK', choices: ['true', 'false'], description: 'Eliminar automáticamente el disco al eliminar la VM')
 
-        // 🔹 Nuevo parámetro para ticket Jira
-        string(name: 'TICKET_JIRA', defaultValue: 'AJI-1', description: 'Ticket de Jira a consultar y comentar')
+        string(name: 'TICKET_JIRA', defaultValue: 'AJI-83', description: 'Ticket de Jira a actualizar')
     }
 
     stages {
@@ -58,7 +57,6 @@ pipeline {
                     echo "================================================"
 
                     def errores = []
-
                     if (!params.SUBNET?.trim()) {
                         errores.add("El parámetro SUBNET no puede estar vacío")
                     }
@@ -67,12 +65,11 @@ pipeline {
                     }
 
                     if (errores.size() > 0) {
-                        echo "Errores de validación:"
                         errores.each { echo "  - ${it}" }
                         error("Validación de parámetros fallida")
                     }
 
-                    echo "Validación de parámetros completada exitosamente"
+                    echo "Validación completada exitosamente"
                 }
             }
         }
@@ -83,93 +80,34 @@ pipeline {
                     echo "Proyecto: ${params.PROYECT_ID}"
                     echo "Región: ${params.REGION}"
                     echo "Zona: ${params.ZONE}"
-                    echo "Nombre VM: ${params.VM_NAME}"
-                    echo "Tipo de OS: ${params.OS_TYPE}"
+                    echo "VM: ${params.VM_NAME}"
+                    echo "OS: ${params.OS_TYPE}"
                 }
             }
         }
 
-        stage('Resumen Pre-Despliegue') {
-            steps {
-                script {
-                    echo "================================================"
-                    echo "              RESUMEN DE CONFIGURACIÓN         "
-                    echo "================================================"
-                    echo "Sistema Operativo Base: ${env.SISTEMA_OPERATIVO_BASE}"
-                    echo "Tipo de Procesador: ${params.PROCESSOR_TECH}"
-                    echo "Memoria RAM (GB): ${params.VM_MEMORY}"
-                    echo "Disco (GB): ${params.DISK_SIZE}"
-                    echo "Infraestructura: ${params.INFRAESTRUCTURE_TYPE}"
-                }
-            }
-        }
-
-        // --- BLOQUES TERRAFORM COMENTADOS ---
         /*
         stage('Terraform Init & Plan') {
             steps {
-                dir('terraform') {
-                    script {
-                        withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
-                            sh """
-                                export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
-                                terraform init
-                                terraform plan -out=tfplan
-                            """
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Terraform Apply') {
-            steps {
-                dir('terraform') {
-                    script {
-                        withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
-                            sh """
-                                export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
-                                terraform apply tfplan
-                            """
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Terraform Destroy') {
-            when {
-                expression { return params.ENVIRONMENT == '3-Producción' }
-            }
-            steps {
-                dir('terraform') {
-                    script {
-                        withCredentials([file(credentialsId: 'gcp-sa-platform', variable: 'GOOGLE_CREDENTIALS')]) {
-                            sh """
-                                export GOOGLE_APPLICATION_CREDENTIALS=\$GOOGLE_CREDENTIALS
-                                terraform destroy -auto-approve
-                            """
-                        }
-                    }
-                }
+                echo "Ejemplo de ejecución Terraform (comentado)"
             }
         }
         */
 
-        // --- 🔹 NUEVO BLOQUE 1: CONSULTA ESTADO EN JIRA ---
-        stage('Post-Jira Status') {
+        stage('Consultar Estado en Jira') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
                         def auth = java.util.Base64.encoder.encodeToString("${JIRA_USER}:${JIRA_API_TOKEN}".getBytes("UTF-8"))
                         def response = sh(
                             script: """
-                                curl -s -X GET "${JIRA_API_URL}${params.TICKET_JIRA}" \\
-                                -H "Authorization: Basic ${auth}" \\
+                                curl -s -X GET "${JIRA_API_URL}${params.TICKET_JIRA}" \
+                                -H "Authorization: Basic ${auth}" \
                                 -H "Accept: application/json"
                             """,
                             returnStdout: true
                         ).trim()
+
                         def json = new groovy.json.JsonSlurper().parseText(response)
                         def estado = json.fields.status.name
                         echo "Estado actual del ticket ${params.TICKET_JIRA}: ${estado}"
@@ -178,41 +116,47 @@ pipeline {
             }
         }
 
-        // --- 🔹 NUEVO BLOQUE 2: COMENTAR EN JIRA ---
-        stage('Post-Coment-jira') {
+        stage('Comentar en Jira') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
                         def auth = java.util.Base64.encoder.encodeToString("${JIRA_USER}:${JIRA_API_TOKEN}".getBytes("UTF-8"))
-                        def comentario = "Este ticket fue comentado y enviado por Scarlet SC"
+                        def comentario = "El ticket fue comentado y cerrado automáticamente por Jenkins."
 
-                        def response = sh(
-                            script: """
-                                curl -s -X POST "${JIRA_API_URL}${params.TICKET_JIRA}/comment" \\
-                                -H "Authorization: Basic ${auth}" \\
-                                -H "Content-Type: application/json" \\
-                                -d '{
-                                    "body": {
-                                        "type": "doc",
-                                        "version": 1,
-                                        "content": [
-                                            {
-                                                "type": "paragraph",
-                                                "content": [
-                                                    {
-                                                        "type": "text",
-                                                        "text": "${comentario}"
-                                                    }
-                                                ]
-                                            }
-                                        ]
-                                    }
-                                }'
-                            """,
-                            returnStdout: true
-                        ).trim()
+                        sh """
+                            curl -s -X POST "${JIRA_API_URL}${params.TICKET_JIRA}/comment" \
+                            -H "Authorization: Basic ${auth}" \
+                            -H "Content-Type: application/json" \
+                            -d '{
+                                "body": {
+                                    "type": "doc",
+                                    "version": 1,
+                                    "content": [{
+                                        "type": "paragraph",
+                                        "content": [{"type": "text", "text": "${comentario}"}]
+                                    }]
+                                }
+                            }'
+                        """
+                    }
+                }
+            }
+        }
 
-                        echo "Comentario enviado al ticket ${params.TICKET_JIRA}: ${response}"
+        stage('Marcar Ticket como Finalizado en Jira') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
+                        def auth = java.util.Base64.encoder.encodeToString("${JIRA_USER}:${JIRA_API_TOKEN}".getBytes("UTF-8"))
+
+                        sh """
+                            curl -s -X POST "https://bancoripley1.atlassian.net/rest/api/3/issue/${params.TICKET_JIRA}/transitions" \
+                            -H "Authorization: Basic ${auth}" \
+                            -H "Content-Type: application/json" \
+                            -d '{"transition": {"id": "31"}}'
+                        """
+
+                        echo "Ticket ${params.TICKET_JIRA} marcado como 'Finalizado'."
                     }
                 }
             }
@@ -228,7 +172,7 @@ pipeline {
         }
         always {
             echo "================================================"
-            echo "            FIN DE LA EJECUCIÓN                "
+            echo "              FIN DE LA EJECUCIÓN              "
             echo "  Fecha: ${new Date()}"
             echo "================================================"
         }
