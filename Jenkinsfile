@@ -31,24 +31,24 @@ pipeline {
         choice(name: 'VM_TYPE', choices: ['n2-standard', 'e2-standard'], description: 'Tipo VM')
         string(name: 'VM_CORES', defaultValue: '2', description: 'vCPUs')
         string(name: 'VM_MEMORY', defaultValue: '8', description: 'RAM GB')
-        choice(name: 'OS_TYPE', choices: ['windows-2016', 'windows-2022', 'windows-2025'], description: 'OS')
-        string(name: 'DISK_SIZE', defaultValue: '100', description: 'Disco GB')
-        choice(name: 'DISK_TYPE', choices: ['pd-ssd', 'pd-balanced', 'pd-standard'], description: 'Tipo disco')
-        choice(name: 'INFRAESTRUCTURE_TYPE', choices: ['On-demand', 'Preemptible'], description: 'Infraestructura')
+        choice(name: 'OS_TYPE', choices: ['windows-2016', 'windows-2022', 'windows-2025'], description: 'Tipo de sistema operativo')
+        string(name: 'DISK_SIZE', defaultValue: '100', description: 'Tamaño de disco (GB)')
+        choice(name: 'DISK_TYPE', choices: ['pd-ssd', 'pd-balanced', 'pd-standard'], description: 'Tipo de disco')
+        choice(name: 'INFRAESTRUCTURE_TYPE', choices: ['On-demand', 'Preemptible'], description: 'Tipo de infraestructura')
         string(name: 'VPC_NETWORK', defaultValue: 'vpc-pe-01', description: 'VPC')
         string(name: 'SUBNET', defaultValue: 'subnet-pe-01', description: 'Subred')
-        string(name: 'NETWORK_SEGMENT', defaultValue: '10.0.1.0/24', description: 'Segmento red')
-        string(name: 'INTERFACE', defaultValue: 'nic0', description: 'Interfaz')
-        choice(name: 'PRIVATE_IP', choices: ['true', 'false'], description: 'IP Privada')
-        choice(name: 'PUBLIC_IP', choices: ['false', 'true'], description: 'IP Pública')
-        string(name: 'FIREWALL_RULES', defaultValue: 'allow-rdp', description: 'Firewall')
-        string(name: 'SERVICE_ACCOUNT', defaultValue: 'sa-plataforma@jenkins-terraform-demo-472920.iam.gserviceaccount.com', description: 'Cuenta Servicio')
-        string(name: 'LABEL', defaultValue: 'app=demo', description: 'Label')
-        choice(name: 'ENABLE_STARTUP_SCRIPT', choices: ['false', 'true'], description: 'Startup script')
-        choice(name: 'ENABLE_DELETION_PROTECTION', choices: ['false', 'true'], description: 'Protección eliminación')
-        choice(name: 'CHECK_DELETE', choices: ['false', 'true'], description: 'Confirmación borrado')
-        choice(name: 'AUTO_DELETE_DISK', choices: ['true', 'false'], description: 'Auto delete disk')
-        string(name: 'TICKET_JIRA', defaultValue: 'AJI-83', description: 'Ticket Jira')
+        string(name: 'NETWORK_SEGMENT', defaultValue: '10.0.1.0/24', description: 'Segmento de red')
+        string(name: 'INTERFACE', defaultValue: 'nic0', description: 'Interfaz de red')
+        choice(name: 'PRIVATE_IP', choices: ['true', 'false'], description: 'Asignar IP privada')
+        choice(name: 'PUBLIC_IP', choices: ['false', 'true'], description: 'Asignar IP pública')
+        string(name: 'FIREWALL_RULES', defaultValue: 'allow-rdp', description: 'Reglas de firewall')
+        string(name: 'SERVICE_ACCOUNT', defaultValue: 'sa-plataforma@jenkins-terraform-demo-472920.iam.gserviceaccount.com', description: 'Cuenta de servicio')
+        string(name: 'LABEL', defaultValue: 'app=demo', description: 'Etiqueta de la VM')
+        choice(name: 'ENABLE_STARTUP_SCRIPT', choices: ['false', 'true'], description: 'Habilitar script de inicio')
+        choice(name: 'ENABLE_DELETION_PROTECTION', choices: ['false', 'true'], description: 'Protección contra eliminación')
+        choice(name: 'CHECK_DELETE', choices: ['false', 'true'], description: 'Confirmar borrado')
+        choice(name: 'AUTO_DELETE_DISK', choices: ['true', 'false'], description: 'Auto eliminación de disco')
+        string(name: 'TICKET_JIRA', defaultValue: 'AJI-83', description: 'Ticket Jira asociado')
     }
 
     stages {
@@ -107,7 +107,6 @@ pipeline {
                             curl -s -u ${JIRA_USER}:${JIRA_API_TOKEN} ${JIRA_API_URL}${TICKET_JIRA} | jq -r '.fields.status.name'
                         """, returnStdout: true).trim()
 
-                        env.ESTADO_TICKET = estado
                         echo "Estado actual del ticket: ${estado}"
 
                         if (estado == "Tareas por hacer") {
@@ -171,7 +170,7 @@ Instancia de máquina virtual creada con los siguientes detalles:"""
                             fields: [
                                 project: [ key: "PRJ" ],
                                 summary: "Nueva VM desplegada - ${params.VM_NAME}",
-                                description: [ type: "doc", version: 1, content: [[ type: "paragraph", content: [[type: "text", text: env.mensaje]] ]] ],
+                                description: "Pipeline ejecutado exitosamente para la VM ${params.VM_NAME} en ${params.REGION}/${params.ZONE}",
                                 issuetype: [ name: "Task" ]
                             ]
                         ]
@@ -185,8 +184,12 @@ Instancia de máquina virtual creada con los siguientes detalles:"""
     }
 
     post {
-        success { echo "Pipeline ejecutado correctamente." }
-        failure { echo "Error al ejecutar el pipeline." }
+        success {
+            echo "Pipeline ejecutado correctamente."
+        }
+        failure {
+            echo "Error al ejecutar el pipeline."
+        }
         always {
             echo "================================================"
             echo " FIN DE LA EJECUCIÓN "
