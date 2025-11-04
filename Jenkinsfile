@@ -98,28 +98,13 @@ pipeline {
             }
         }
 
-        stage('Validación de Parámetros') {
-            steps {
-                script {
-                    def errores = []
-                    if (!params.SUBNET?.trim()) errores.add("SUBNET no puede estar vacío")
-                    if (!params.NETWORK_SEGMENT?.trim()) errores.add("NETWORK_SEGMENT no puede estar vacío")
-                    if (errores) {
-                        errores.each { echo it }
-                        error("Validación de parámetros fallida")
-                    }
-                }
-            }
-        }
-
         stage('Validar y Transicionar Ticket Jira') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
 
-                        def estado = powershell(script: """
-                            \$resp = Invoke-RestMethod -Uri "${JIRA_API_URL}${TICKET_JIRA}" -Headers @{Authorization=("Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${JIRA_USER}:${JIRA_API_TOKEN}"))) }
-                            \$resp.fields.status.name
+                        def estado = sh(script: """
+                            curl -s -u ${JIRA_USER}:${JIRA_API_TOKEN} ${JIRA_API_URL}${TICKET_JIRA} | jq -r '.fields.status.name'
                         """, returnStdout: true).trim()
 
                         env.ESTADO_TICKET = estado
@@ -128,9 +113,7 @@ pipeline {
                         if (estado == "Tareas por hacer") {
                             def payloadTrans = groovy.json.JsonOutput.toJson([transition: [id: "31"]])
                             writeFile file: 'transicion.json', text: payloadTrans
-                            powershell """
-                                Invoke-RestMethod -Uri "${JIRA_API_URL}${TICKET_JIRA}/transitions" -Method Post -Headers @{Authorization=("Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${JIRA_USER}:${JIRA_API_TOKEN}")))} -ContentType "application/json" -InFile "transicion.json"
-                            """
+                            sh "curl -s -u ${JIRA_USER}:${JIRA_API_TOKEN} -X POST -H 'Content-Type: application/json' --data @transicion.json ${JIRA_API_URL}${TICKET_JIRA}/transitions"
                         } else if (estado in ["Done", "Finalizado"]) {
                             error("El ticket ${TICKET_JIRA} ya está en estado '${estado}'. No se puede volver a marcar.")
                         }
@@ -142,32 +125,11 @@ pipeline {
         stage('Notificar a Teams') {
             steps {
                 script {
-                    if (env.ESTADO_TICKET in ["Done", "Finalizado"]) {
-                        def mensajeError = "El ticket ${TICKET_JIRA} ya estaba '${env.ESTADO_TICKET}'. No se realizó nueva transición ni despliegue."
-                        def payloadError = groovy.json.JsonOutput.toJson([ text: mensajeError ])
-                        writeFile file: 'teams_error.json', text: payloadError
-                        powershell "Invoke-RestMethod -Uri '${TEAMS_WEBHOOK}' -Method Post -ContentType 'application/json' -InFile 'teams_error.json'"
-                        error("Pipeline detenido: ticket ya finalizado.")
-                    }
-
                     def mensajeTeams = """Ticket ${TICKET_JIRA} cambió automáticamente de 'Tareas por hacer' a 'Finalizado (Done)'.
 
 Pipeline completado correctamente.
 
 Instancia de máquina virtual creada con los siguientes detalles:"""
-
-                    def facts = [
-                        [ name: "País", value: env.PAIS ],
-                        [ name: "Ambiente", value: params.ENVIRONMENT ],
-                        [ name: "Proyecto GCP", value: params.PROYECT_ID ],
-                        [ name: "Nombre de la VM", value: params.VM_NAME ],
-                        [ name: "Región/Zona", value: "${params.REGION}/${params.ZONE}" ],
-                        [ name: "Tipo de Máquina", value: params.VM_TYPE ],
-                        [ name: "vCPUs / RAM", value: "${params.VM_CORES} / ${params.VM_MEMORY} GB" ],
-                        [ name: "Disco", value: "${params.DISK_SIZE} GB (${params.DISK_TYPE})" ],
-                        [ name: "OS", value: params.OS_TYPE ],
-                        [ name: "Red", value: "${params.VPC_NETWORK} / ${params.SUBNET}" ]
-                    ]
 
                     def card = [
                         '@type': 'MessageCard',
@@ -177,41 +139,25 @@ Instancia de máquina virtual creada con los siguientes detalles:"""
                         themeColor: "0076D7",
                         sections: [[
                             activitySubtitle: "Ticket Jira: ${params.TICKET_JIRA}",
-                            facts: facts,
+                            facts: [
+                                [ name: "País", value: env.PAIS ],
+                                [ name: "Ambiente", value: params.ENVIRONMENT ],
+                                [ name: "Proyecto GCP", value: params.PROYECT_ID ],
+                                [ name: "Nombre de la VM", value: params.VM_NAME ],
+                                [ name: "Región/Zona", value: "${params.REGION}/${params.ZONE}" ],
+                                [ name: "Tipo de Máquina", value: params.VM_TYPE ],
+                                [ name: "vCPUs / RAM", value: "${params.VM_CORES} / ${params.VM_MEMORY} GB" ],
+                                [ name: "Disco", value: "${params.DISK_SIZE} GB (${params.DISK_TYPE})" ],
+                                [ name: "OS", value: params.OS_TYPE ],
+                                [ name: "Red", value: "${params.VPC_NETWORK} / ${params.SUBNET}" ]
+                            ],
                             markdown: true
-                        ]],
-                        potentialAction: [[
-                            '@type': "OpenUri",
-                            name: "Ver Build",
-                            targets: [[ os: "default", uri: env.BUILD_URL ?: "" ]]
                         ]]
                     ]
 
                     def payload = groovy.json.JsonOutput.toJson(card)
                     writeFile file: 'teams_final.json', text: payload
-                    powershell "Invoke-RestMethod -Uri '${TEAMS_WEBHOOK}' -Method Post -ContentType 'application/json' -InFile 'teams_final.json'"
-                }
-            }
-        }
-
-        stage('Descripción Jira') {
-            steps {
-                script {
-                    env.mensaje = """
-                    País: ${env.PAIS}
-                    VM: ${params.VM_NAME}
-                    Ambiente: ${params.ENVIRONMENT}
-                    Proyecto: ${params.PROYECT_ID}
-                    Región/Zona: ${params.REGION}/${params.ZONE}
-                    Tipo de VM: ${params.VM_TYPE}
-                    vCPUs: ${params.VM_CORES}
-                    RAM: ${params.VM_MEMORY} GB
-                    Disco: ${params.DISK_SIZE} GB (${params.DISK_TYPE})
-                    OS: ${params.OS_TYPE}
-                    VPC/Subnet: ${params.VPC_NETWORK} / ${params.SUBNET}
-                    IP Pública: ${params.PUBLIC_IP}
-                    Firewall: ${params.FIREWALL_RULES}
-                    """
+                    sh "curl -s -H 'Content-Type: application/json' --data @teams_final.json '${TEAMS_WEBHOOK}'"
                 }
             }
         }
@@ -221,27 +167,17 @@ Instancia de máquina virtual creada con los siguientes detalles:"""
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
-
                         def payloadMap = [
                             fields: [
                                 project: [ key: "PRJ" ],
                                 summary: "Nueva VM desplegada - ${params.VM_NAME}",
-                                description: [
-                                    type: "doc",
-                                    version: 1,
-                                    content: [[
-                                        type: "paragraph",
-                                        content: [[type: "text", text: env.mensaje]]
-                                    ]]
-                                ],
+                                description: [ type: "doc", version: 1, content: [[ type: "paragraph", content: [[type: "text", text: env.mensaje]] ]] ],
                                 issuetype: [ name: "Task" ]
                             ]
                         ]
-
                         def payloadJson = groovy.json.JsonOutput.toJson(payloadMap)
-                        powershell """
-                            Invoke-RestMethod -Uri "${JIRA_API_URL}" -Method Post -Headers @{Authorization=("Basic " + [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${JIRA_USER}:${JIRA_API_TOKEN}")))} -ContentType "application/json" -Body '${payloadJson}'
-                        """
+                        writeFile file: 'jira_create.json', text: payloadJson
+                        sh "curl -s -u ${JIRA_USER}:${JIRA_API_TOKEN} -X POST -H 'Content-Type: application/json' --data @jira_create.json ${JIRA_API_URL}"
                     }
                 }
             }
