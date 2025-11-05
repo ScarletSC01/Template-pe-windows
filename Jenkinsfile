@@ -13,7 +13,6 @@ pipeline {
         JIRA_API_URL = "https://bancoripley1.atlassian.net/rest/api/3/issue/"
         TICKET_JIRA = "AJI-83"
         TEAMS_WEBHOOK = "https://accenture.webhook.office.com/webhookb2/8fb63984-6f5f-4c2a-a6d3-b4fce2feb8ee@e0793d39-0939-496d-b129-198edd916feb/IncomingWebhook/334818fae3a84ae484512967d1d3f4f1/b08cc148-e951-496b-9f46-3f7e35f79570/V27mobtZgWmAzxIvjHCY5CMAFKPZptkEnQbT5z7X84QNQ1"
-        // intentos máximos para crear instancia
         MAX_RETRIES = 2
     }
 
@@ -101,11 +100,42 @@ pipeline {
             }
         }
 
+        // 🔹 Se agregan antes del ticket Jira:
+        stage('Validación de Parámetros') {
+            steps {
+                script {
+                    def errores = []
+                    if (!params.SUBNET?.trim()) errores.add("SUBNET no puede estar vacío")
+                    if (!params.NETWORK_SEGMENT?.trim()) errores.add("NETWORK_SEGMENT no puede estar vacío")
+                    if (errores) {
+                        errores.each { echo it }
+                        error("Validación de parámetros fallida")
+                    } else {
+                        echo "Validación de parámetros completada exitosamente."
+                    }
+                }
+            }
+        }
+
+        stage('Resumen Pre-Despliegue') {
+            steps {
+                script {
+                    echo "================================================"
+                    echo " RESUMEN DE CONFIGURACIÓN "
+                    echo "================================================"
+                    echo "Sistema Operativo Base: ${env.SISTEMA_OPERATIVO_BASE}"
+                    echo "Tipo de Procesador: ${params.PROCESSOR_TECH}"
+                    echo "Memoria RAM (GB): ${params.VM_MEMORY}"
+                    echo "Disco (GB): ${params.DISK_SIZE}"
+                    echo "Infraestructura: ${params.INFRAESTRUCTURE_TYPE}"
+                }
+            }
+        }
+
         stage('Validar y Transicionar Ticket Jira') {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'JIRA_TOKEN', usernameVariable: 'JIRA_USER', passwordVariable: 'JIRA_API_TOKEN')]) {
-
                         def estado = sh(script: """
                             curl -s -u ${JIRA_USER}:${JIRA_API_TOKEN} ${JIRA_API_URL}${TICKET_JIRA} | jq -r '.fields.status.name'
                         """, returnStdout: true).trim()
@@ -124,6 +154,19 @@ pipeline {
             }
         }
 
+        stage('Validar Environment') {
+            steps {
+                script {
+                    def envValido = ['desarrollo-1', 'pre-productivo-2', 'produccion-3']
+                    if (!envValido.contains(params.ENVIRONMENT)) {
+                        error("El environment '${params.ENVIRONMENT}' no es válido. Debe ser uno de: ${envValido.join(', ')}")
+                    } else {
+                        echo "Environment '${params.ENVIRONMENT}' validado correctamente."
+                    }
+                }
+            }
+        }
+
         stage('Crear Infraestructura en GCP') {
             steps {
                 script {
@@ -135,29 +178,28 @@ pipeline {
                         echo "Intento #${attempt}: simulando creación de infraestructura..."
 
                         try {
-                            // Simulación de fallo (cambiar 'false' por comando real)
                             sh 'false'
-                            echo "Simulación exitosa (esto no debería ocurrir con 'false')."
+                            echo "Simulación exitosa."
                             success = true
                         } catch (err) {
                             echo "Error en el intento #${attempt}: ${err.getMessage()}"
                             if (attempt == env.MAX_RETRIES.toInteger()) {
-                                error "Simulación fallida después de ${env.MAX_RETRIES} intentos."
+                                error "Falló la creación después de ${env.MAX_RETRIES} intentos."
                             } else {
                                 echo "Reintentando..."
                             }
                         }
-                    } 
+                    }
                 }
-            } 
+            }
         }
 
         stage('Notificar a Teams') {
             steps {
                 script {
-                    def mensajeTeams = """Ticket ${TICKET_JIRA} cambió automáticamente de 'Tareas por hacer' a 'Finalizado (Done)'.
+                    def mensajeTeams = """Ticket ${TICKET_JIRA} cambió automáticamente de 'Tareas por hacer' a 'Finalizado (Done)'. 
 
-Pipeline completado correctamente.
+Pipeline completado correctamente. 
 
 Instancia de máquina virtual creada con los siguientes detalles:"""
 
@@ -229,4 +271,3 @@ Instancia de máquina virtual creada con los siguientes detalles:"""
         }
     }
 }
-
